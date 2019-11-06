@@ -1,0 +1,17 @@
+%dw 1.0
+%output application/json encoding="UTF-8"
+---
+
+	payload pluck (value,key)  -> {
+	country : {
+		country_code: key,
+		country_name: value.name,
+		native: value.native,
+		phone_code: value.phone,
+		continent_code: value.continent,
+		capital: value.capital,
+		currency: value.currency,
+		languages: value.languages joinBy ','
+	}
+
+}

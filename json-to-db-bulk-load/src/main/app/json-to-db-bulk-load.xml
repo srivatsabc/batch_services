@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    <db:mysql-config name="MySQL_Configuration" host="127.0.0.1" port="3306" user="mysql" password="root" database="localdev" doc:name="MySQL Configuration">
+        <db:connection-properties>
+            <db:property key="characterEncoding" value="UTF-8"/>
+        </db:connection-properties>
+    </db:mysql-config>
+    <batch:job name="json-to-db-bulk-loadBatch">
+        <batch:input>
+            <file:inbound-endpoint path="C:\Srivatsa\1. Mule ESB\workspace\batch_services\json-to-db-bulk-load\src\test\resources\input" responseTimeout="10000" doc:name="File"/>
+            <logger message="Level1: #[payload]" level="INFO" doc:name="Logger"/>
+            <dw:transform-message doc:name="Convert Json to Json" metadata:id="578bce2e-d166-4485-a94c-071c897a68c2">
+                <dw:input-payload mimeType="application/json"/>
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/json encoding="UTF-8"
+---
+
+	payload pluck (value,key)  -> {
+	country : {
+		country_code: key,
+		country_name: value.name,
+		native: value.native,
+		phone_code: value.phone,
+		continent_code: value.continent,
+		capital: value.capital,
+		currency: value.currency,
+		languages: value.languages joinBy ','
+	}
+
+}]]></dw:set-payload>
+            </dw:transform-message>
+            <logger message="Level2: #[payload]" level="INFO" doc:name="Logger"/>
+            <dw:transform-message doc:name="Convert Json to Iteratable Obj" metadata:id="f9db296e-9fb6-4b28-ac57-a6fdde204f75">
+                <dw:input-payload mimeType="application/json"/>
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map ((payload01 , indexOfPayload01) -> {
+	country_code: payload01.country.country_code,
+	country_name: payload01.country.country_name,
+	native: payload01.country.native,
+	phone_code: payload01.country.phone_code,
+	continent_code: payload01.country.continent_code,
+	capital: payload01.country.capital,
+	currency: payload01.country.currency,
+	languages: payload01.country.languages	
+})]]></dw:set-payload>
+            </dw:transform-message>
+            <logger message="Level3: #[payload]" level="INFO" doc:name="Logger"/>
+        </batch:input>
+        <batch:process-records>
+            <batch:step name="Batch_Step">
+                <batch:commit size="100" doc:name="Batch Commit">
+                    <db:insert config-ref="MySQL_Configuration" bulkMode="true" doc:name="Database">
+                        <db:parameterized-query><![CDATA[insert into countries values (#[payload.country_code],#[payload.country_name],#[payload.native],#[payload.phone_code],#[payload.continent_code],#[payload.capital],#[payload.currency],#[payload.languages],#['bulk-load'],#[function:now])]]></db:parameterized-query>
+                    </db:insert>
+                </batch:commit>
+            </batch:step>
+        </batch:process-records>
+        <batch:on-complete>
+            <logger message="Done" level="INFO" doc:name="Logger"/>
+        </batch:on-complete>
+    </batch:job>
+
+</mule>

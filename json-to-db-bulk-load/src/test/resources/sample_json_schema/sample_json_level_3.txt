@@ -1,0 +1,13 @@
+﻿{
+  "AE": {
+    "name": "United Arab Emirates",
+    "native": "دولة الإمارات العربية المتحدة",
+    "phone": "971",
+    "continent": "AS",
+    "capital": "Abu Dhabi",
+    "currency": "AED",
+    "languages": [
+      "ar"
+    ]
+  }
+}

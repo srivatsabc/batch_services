@@ -1,0 +1,12 @@
+{
+    "country": {
+      "country_code": "AF",
+      "country_name": "Afghanistan",
+      "native": "Ø§Ù?ØºØ§Ù†Ø³ØªØ§Ù†",
+      "phone_code": "93",
+      "continent_code": "AS",
+      "capital": "Kabul",
+      "currency": "AFN",
+      "languages": "ps,uz,tk"
+    }
+}
