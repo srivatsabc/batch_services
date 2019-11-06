@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:sfdc="http://www.mulesoft.org/schema/mule/sfdc" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/sfdc http://www.mulesoft.org/schema/mule/sfdc/current/mule-sfdc.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+	<spring:beans>
+	<context:property-placeholder
+	location="classpath:${RUNTIME.ENV.TYPE}.properties" />
+	</spring:beans>
+    <sfdc:config name="Salesforce__Basic_Authentication" username="${SF_USER}" password="${SF_PASSWORD}" securityToken="${SF_TOKEN}" doc:name="Salesforce: Basic Authentication"/>
+    <flow name="csv-to-salesforce-bulk-loadFlow">
+        <file:inbound-endpoint path="C:\Srivatsa\1. Mule ESB\workspace\batch_services\csv-to-salesforce-bulk-load\src\test\resources" responseTimeout="10000" doc:name="File"/>
+        <dw:transform-message doc:name="Transform Message" metadata:id="29da5058-9298-48cc-b259-c511b1f0b750">
+            <dw:input-payload mimeType="application/csv"/>
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map ((payload01 , indexOfPayload01) -> {
+	AirlineId__c: payload01.AirlineId,
+	AirlineName__c: payload01.AirlineName,
+	Alias__c: payload01.Alias,
+	IATA__c: payload01.IATA,
+	ICAO__c: payload01.ICAO,
+	Callsign__c: payload01.Callsign,
+	Country__c: payload01.Country,
+	Active__c: payload01.Active
+})]]></dw:set-payload>
+        </dw:transform-message>
+        <sfdc:create-bulk config-ref="Salesforce__Basic_Authentication" type="Airline__c" doc:name="Salesforce">
+            <sfdc:objects ref="#[payload]"/>
+        </sfdc:create-bulk>
+        <logger message="Salesforce Batch Completed # #[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
