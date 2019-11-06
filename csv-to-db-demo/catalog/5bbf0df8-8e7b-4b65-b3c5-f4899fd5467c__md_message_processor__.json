@@ -1,0 +1,16 @@
+{
+    "inputMessageMetadata": {
+        "messagePayload": {
+            "connectorName": "#_custom_mule_metadata_type_#",
+            "typeId": "airports_data"
+        }
+    },
+    "outputMessageMetadata": {
+        "messagePayload": {
+            "connectorName": "#_custom_mule_metadata_type_#",
+            "typeId": "database_record_map"
+        }
+    },
+    "id": "5bbf0df8-8e7b-4b65-b3c5-f4899fd5467c",
+    "version": "5.2.0.0"
+}

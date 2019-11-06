@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+    <db:mysql-config name="mysql_container" host="192.168.99.101" port="30006" user="root" password="password" database="minikube-dev" doc:name="MySQL Configuration"/>
+    <db:mysql-config name="mysql_local" host="192.168.1.50" port="3306" user="root" password="password" database="dockermaster-dev" doc:name="MySQL Configuration"/>
+    <db:mysql-config name="k8s-master-mysql" host="192.168.1.60" port="30006" user="root" password="password" database="kubemaster-dev" doc:name="MySQL Configuration"/>
+    <batch:job name="csv-to-db-demoBatch" >
+        <batch:input>
+            <file:inbound-endpoint path="C:\Srivatsa\1. Mule ESB\workspace\batch_services\mygitrepo-mule\csv-to-db-demo\src\test\resources\input" responseTimeout="10000" doc:name="File"/>
+            <dw:transform-message doc:name="Transform Message" metadata:id="77b5b9f0-e0b8-4386-a6ee-813b80f45b0f">
+                <dw:input-payload mimeType="application/csv"/>
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload map ((payload01 , indexOfPayload01) -> {
+	airline: payload01.airline,
+	airline_id: payload01.airline_id,
+	source_aiport: payload01.source_aiport,
+	source_aiport_id: payload01.source_aiport_id,
+	destination_aiport: payload01.destination_aiport,
+	destination_aiport_id: payload01.destination_aiport_id,
+	codeshare: payload01.codeshare,
+	stops: payload01.stops,
+	equipment: payload01.equipment,
+	created_at: now,
+	updated_at: now
+})]]></dw:set-payload>
+            </dw:transform-message>
+            <logger message="Here : #[payload.get(1)]" level="INFO" doc:name="Logger"/>
+        </batch:input>
+        <batch:process-records>
+            <batch:step name="Batch_Step">
+                <batch:commit size="1500" doc:name="Batch Commit">
+                    <db:insert config-ref="k8s-master-mysql" bulkMode="true" doc:name="Database">
+                        <db:parameterized-query><![CDATA[insert into routes values (#[payload.airline],#[payload.airline_id],#[payload.source_aiport],#[payload.source_aiport_id],#[payload.destination_aiport],#[payload.destination_aiport_id],#[payload.codeshare],#[payload.stops],#[payload.equipment],#[function:now],#[function:now])]]></db:parameterized-query>
+
+                    </db:insert>
+                </batch:commit>
+            </batch:step>
+        </batch:process-records>
+        <batch:on-complete>
+            <logger message="Completed Batch Job" level="INFO" doc:name="Logger"/>
+        </batch:on-complete>
+    </batch:job>
+</mule>
